@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search Books</title>
+    <style>
+        /* Basic styling */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .container {
+            text-align: center;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        textarea {
+            padding: 10px;
+            width: 300px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #result {
+            margin-top: 20px;
+            text-align: left;
+        }
+        .book {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .book img {
+            max-width: 100px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <input type="text" id="searchInput" placeholder="Enter book name...">
+        <button onclick="searchBooks()">Search</button>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+        function searchBooks() {
+            var query = document.getElementById("searchInput").value;
+            var url = "https://www.googleapis.com/books/v1/volumes?q=" + encodeURIComponent(query);
+            
+            // Make AJAX request to Google Books API
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", url, true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    var response = JSON.parse(xhr.responseText);
+                    displayResults(response);
+                }
+            };
+            xhr.send();
+        }
+
+        function displayResults(response) {
+            var resultDiv = document.getElementById("result");
+            resultDiv.innerHTML = ""; // Clear previous results
+            
+            if (response.items) {
+                response.items.forEach(function (item) {
+                    var title = item.volumeInfo.title;
+                    var authors = item.volumeInfo.authors ? item.volumeInfo.authors.join(", ") : "Unknown author";
+                    var thumbnail = item.volumeInfo.imageLinks ? item.volumeInfo.imageLinks.thumbnail : "No thumbnail";
+                    var buyLink = item.saleInfo.buyLink ? item.saleInfo.buyLink : "#"; // Check if buy link exists
+                    
+                    var bookDiv = document.createElement("div");
+                    bookDiv.classList.add("book");
+                    bookDiv.innerHTML = "<h3>" + title + "</h3>" +
+                                        "<p><strong>Authors:</strong> " + authors + "</p>" +
+                                        "<img src='" + thumbnail + "' alt='Book thumbnail'>" +
+                                        "<button onclick='showForm(\"" + title + "\", \"" + authors + "\")'>Buy</button>";
+                    resultDiv.appendChild(bookDiv);
+                });
+            } else {
+                resultDiv.innerHTML = "<p>No results found</p>";
+            }
+        }
+
+        function showForm(title, authors) {
+            event.preventDefault(); // Prevent default behavior of button
+            
+            var formHtml = "<h3>Buy Book: " + title + "</h3>" +
+                           "<p><strong>Authors:</strong> " + authors + "</p>" +
+                           "<form id='buyForm' onsubmit='submitForm(event)'>" +
+                           "<input type='text' id='name' placeholder='Your Name' required><br>" +
+                           "<input type='email' id='email' placeholder='Your Email' required><br>" +
+                           "<input type='tel' id='phone' placeholder='Your Phone Number' required><br>" +
+                           "<textarea id='address' placeholder='Your Address' required></textarea><br>" +
+                           "<button type='submit'>Send</button>" +
+                           "</form>";
+
+            var formDiv = document.getElementById("formDiv");
+            formDiv.innerHTML = formHtml;
+        }
+
+        function submitForm(event) {
+            event.preventDefault();
+
+            var name = document.getElementById("name").value;
+            var email = document.getElementById("email").value;
+            var phone = document.getElementById("phone").value;
+            var address = document.getElementById("address").value;
+
+            // You can use fetch API to send data to Google Sheets API here
+            // Example:
+             fetch('https://script.google.com/macros/s/zangarpro/exec', {
+                 method: 'POST',
+                 body: JSON.stringify({name: name, email: email, phone: phone, address: address})
+             }).then(response => {
+                 console.log('Data sent successfully');
+             }).catch(error => {
+                 console.error('Error:', error);
+             });
+
+            // For demonstration purposes, log the data to console
+            console.log("Name:", name);
+            console.log("Email:", email);
+            console.log("Phone:", phone);
+            console.log("Address:", address);
+
+            // Clear the form after submission
+            document.getElementById("buyForm").reset();
+        }
+    </script>
+    
+    <div id="formDiv"></div>
+</body>
+</html>
